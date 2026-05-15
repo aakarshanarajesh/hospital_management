@@ -11,6 +11,8 @@ const bedRoutes = require('./routes/bedRoutes');
 const doctorScheduleRoutes = require('./routes/doctorScheduleRoutes');
 const resourceRoutes = require('./routes/resourceRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const auth = require('./middleware/auth');
+const aiController = require('./controllers/aiController');
 
 const app = express();
 
@@ -34,6 +36,7 @@ app.use('/api/beds', bedRoutes);
 app.use('/api/schedules', doctorScheduleRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/ai', aiRoutes);
+app.post('/api/predict-risk', auth, aiController.predictPatientRisk);
 
 // 404 handler
 app.use('*', (req, res) => {

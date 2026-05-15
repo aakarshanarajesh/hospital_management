@@ -43,9 +43,10 @@ const addPatient = async (req, res, next) => {
 // Get All Patients
 const getAllPatients = async (req, res, next) => {
   try {
-    const { status } = req.query;
+    const { status, riskLevel } = req.query;
     const filter = {};
     if (status) filter.status = status;
+    if (riskLevel) filter.riskLevel = riskLevel;
 
     const patients = await Patient.find(filter)
       .populate('bedId')

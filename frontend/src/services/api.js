@@ -42,7 +42,10 @@ export const authAPI = {
 
 // Patient API
 export const patientAPI = {
-  getAll: (status) => api.get('/patients', { params: { status } }),
+  getAll: (filters = {}) =>
+    api.get('/patients', {
+      params: typeof filters === 'string' ? { status: filters } : filters,
+    }),
   getById: (id) => api.get(`/patients/${id}`),
   create: (data) => api.post('/patients', data),
   update: (id, data) => api.put(`/patients/${id}`, data),
@@ -85,7 +88,7 @@ export const resourceAPI = {
 
 // AI API
 export const aiAPI = {
-  predictRisk: (data) => api.post('/ai/predict-risk', data),
+  predictRisk: (data) => api.post('/predict-risk', data),
   getHighRiskPatients: () => api.get('/ai/high-risk-patients'),
   getDashboardStats: () => api.get('/ai/dashboard-stats'),
   askAssistant: (question) => api.post('/ai/ask-assistant', { question }),

@@ -40,12 +40,14 @@ export default function PatientsPage() {
 
   useEffect(() => {
     fetchPatients();
-  }, []);
+  }, [highRiskOnly]);
 
   const fetchPatients = async () => {
     try {
       setLoading(true);
-      const res = await patientAPI.getAll();
+      const res = await patientAPI.getAll(
+        highRiskOnly ? { riskLevel: 'High' } : {}
+      );
       setPatients(res.data);
     } catch (err) {
       setError('Failed to load patients');
@@ -144,9 +146,7 @@ export default function PatientsPage() {
     return 'bg-gray-100 text-gray-700';
   };
 
-  const displayedPatients = highRiskOnly
-    ? patients.filter((patient) => patient.riskPrediction?.riskLabel === 'High')
-    : patients;
+  const displayedPatients = patients;
 
   if (loading) return <Loader />;
 
@@ -485,10 +485,12 @@ export default function PatientsPage() {
                         <td className="py-3 px-4">
                           <span
                             className={`px-3 py-1 rounded-full text-sm ${riskBadgeClass(
-                              patient.riskPrediction?.riskLabel
+                              patient.riskLevel || patient.riskPrediction?.riskLabel
                             )}`}
                           >
-                            {patient.riskPrediction?.riskLabel || 'Not predicted'}
+                            {patient.riskLevel ||
+                              patient.riskPrediction?.riskLabel ||
+                              'Not predicted'}
                           </span>
                           {patient.riskPrediction?.probability && (
                             <p className="text-xs text-gray-500 mt-1">

@@ -56,6 +56,7 @@ def health_check():
     }), 200
 
 @app.route('/api/predict-risk', methods=['POST'])
+@app.route('/predict-risk', methods=['POST'])
 def predict_risk():
     """
     Predict patient risk level
@@ -90,6 +91,22 @@ def predict_risk():
         
         data = request.get_json()
         
+        symptoms = data.get('symptoms', [])
+        normalized_symptoms = [str(symptom).lower() for symptom in symptoms]
+        if 'bp' in data and 'systolic_bp' not in data:
+            data['systolic_bp'] = data['bp']
+        if 'diastolic_bp' not in data:
+            data['diastolic_bp'] = data.get('systolic_bp', 120) - 40
+        if 'fever' not in data:
+            data['fever'] = int('fever' in normalized_symptoms)
+        if 'cough' not in data:
+            data['cough'] = int('cough' in normalized_symptoms)
+        if 'breathing_difficulty' not in data:
+            data['breathing_difficulty'] = int(
+                'breathing difficulty' in normalized_symptoms
+                or 'breathing_difficulty' in normalized_symptoms
+            )
+
         # Validate required fields
         required_fields = ['age', 'heart_rate', 'systolic_bp', 'diastolic_bp', 
                           'spo2', 'fever', 'cough', 'breathing_difficulty']
@@ -116,7 +133,11 @@ def predict_risk():
         
         logger.info(f"Risk prediction: {prediction['risk_label']}")
         
-        return jsonify(prediction), 200
+        return jsonify({
+            **prediction,
+            'risk': prediction['risk_label'],
+            'confidence': prediction['probability'],
+        }), 200
     
     except Exception as e:
         logger.error(f"Prediction error: {e}")

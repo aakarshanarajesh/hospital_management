@@ -10,7 +10,7 @@ const Bed = require('../models/Bed');
 const Resource = require('../models/Resource');
 const axios = require('axios');
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:10000';
 
 /**
  * Predict patient risk
@@ -18,7 +18,8 @@ const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
  */
 exports.predictPatientRisk = async (req, res) => {
   try {
-    const { patientId, healthMetrics } = req.body;
+    const { patientId } = req.body;
+    const healthMetrics = normalizeRiskInput(req.body);
 
     // Validate required fields
     if (!healthMetrics) {
@@ -45,7 +46,7 @@ exports.predictPatientRisk = async (req, res) => {
     // Call ML service
     let prediction;
     try {
-      const response = await axios.post(`${ML_SERVICE_URL}/api/predict-risk`, {
+      const response = await axios.post(`${ML_SERVICE_URL}/predict-risk`, {
         age: healthMetrics.age,
         heart_rate: healthMetrics.heart_rate,
         systolic_bp: healthMetrics.systolic_bp,
@@ -69,10 +70,11 @@ exports.predictPatientRisk = async (req, res) => {
       const patient = await Patient.findByIdAndUpdate(
         patientId,
         {
+          riskLevel: prediction.risk_label || prediction.risk,
           riskPrediction: {
             riskLevel: prediction.risk_level,
-            riskLabel: prediction.risk_label,
-            probability: prediction.probability,
+            riskLabel: prediction.risk_label || prediction.risk,
+            probability: prediction.probability || prediction.confidence,
             probabilities: prediction.probabilities,
             predictedAt: new Date(),
             healthMetrics: {
@@ -95,20 +97,48 @@ exports.predictPatientRisk = async (req, res) => {
 
       return res.status(200).json({
         message: 'Risk prediction saved',
-        patient: patient,
-        prediction: prediction,
+        risk: prediction.risk_label || prediction.risk,
+        confidence: prediction.probability || prediction.confidence,
+        patient,
+        prediction,
       });
     }
 
     res.status(200).json({
       message: 'Risk prediction generated',
-      prediction: prediction,
+      risk: prediction.risk_label || prediction.risk,
+      confidence: prediction.probability || prediction.confidence,
+      prediction,
     });
   } catch (error) {
     console.error('Risk prediction error:', error);
     res.status(500).json({ error: 'Risk prediction failed' });
   }
 };
+
+function normalizeRiskInput(body) {
+  if (body.healthMetrics) return body.healthMetrics;
+
+  const symptoms = Array.isArray(body.symptoms)
+    ? body.symptoms.map((symptom) => String(symptom).toLowerCase())
+    : [];
+
+  return {
+    age: body.age,
+    heart_rate: body.heart_rate,
+    systolic_bp: body.systolic_bp || body.bp,
+    diastolic_bp: body.diastolic_bp || (body.bp ? Number(body.bp) - 40 : undefined),
+    spo2: body.spo2,
+    fever: body.fever ?? (symptoms.includes('fever') ? 1 : 0),
+    cough: body.cough ?? (symptoms.includes('cough') ? 1 : 0),
+    breathing_difficulty:
+      body.breathing_difficulty ??
+      (symptoms.includes('breathing difficulty') ||
+      symptoms.includes('breathing_difficulty')
+        ? 1
+        : 0),
+  };
+}
 
 /**
  * Get high risk patients
@@ -117,7 +147,7 @@ exports.predictPatientRisk = async (req, res) => {
 exports.getHighRiskPatients = async (req, res) => {
   try {
     const patients = await Patient.find({
-      'riskPrediction.riskLevel': 2,
+      $or: [{ riskLevel: 'High' }, { 'riskPrediction.riskLevel': 2 }],
       status: 'admitted',
     })
       .select(
@@ -177,19 +207,19 @@ exports.getAIDashboardStats = async (req, res) => {
   try {
     // Get high risk count
     const highRiskCount = await Patient.countDocuments({
-      'riskPrediction.riskLevel': 2,
+      $or: [{ riskLevel: 'High' }, { 'riskPrediction.riskLevel': 2 }],
       status: 'admitted',
     });
 
     // Get medium risk count
     const mediumRiskCount = await Patient.countDocuments({
-      'riskPrediction.riskLevel': 1,
+      $or: [{ riskLevel: 'Medium' }, { 'riskPrediction.riskLevel': 1 }],
       status: 'admitted',
     });
 
     // Get low risk count
     const lowRiskCount = await Patient.countDocuments({
-      'riskPrediction.riskLevel': 0,
+      $or: [{ riskLevel: 'Low' }, { 'riskPrediction.riskLevel': 0 }],
       status: 'admitted',
     });
 
@@ -322,7 +352,7 @@ async function getStatsFromDatabase() {
       status: 'admitted',
     });
     stats.high_risk_patients = await Patient.countDocuments({
-      'riskPrediction.riskLevel': 2,
+      $or: [{ riskLevel: 'High' }, { 'riskPrediction.riskLevel': 2 }],
       status: 'admitted',
     });
     stats.beds_occupied = await Bed.countDocuments({ status: 'occupied' });

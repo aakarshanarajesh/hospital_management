@@ -26,6 +26,11 @@ const patientSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please provide disease/condition'],
     },
+    riskLevel: {
+      type: String,
+      enum: ['Low', 'Medium', 'High', 'Not predicted'],
+      default: 'Not predicted',
+    },
     admissionDate: {
       type: Date,
       default: Date.now,
