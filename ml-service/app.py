@@ -237,16 +237,5 @@ def not_found(error):
 def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
-if __name__ == '__main__':
-    port = int(os.getenv('FLASK_PORT', 5001))
-    debug = os.getenv('FLASK_ENV') == 'development'
-    
-    print(f"\nStarting Hospital ML Service on port {port}")
-    print(f"http://localhost:{port}")
-    print(f"API Docs:")
-    print(f"   POST /api/predict-risk - Predict patient risk")
-    print(f"   POST /api/ask-assistant - Ask hospital assistant")
-    print(f"   GET /api/hospital-stats - Get hospital statistics")
-    print(f"   GET /api/model-info - Get model information\n")
-    
-    app.run(host='0.0.0.0', port=port, debug=debug, use_reloader=False)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
