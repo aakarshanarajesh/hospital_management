@@ -32,7 +32,11 @@ export const AuthProvider = ({ children }) => {
       return response.data;
     } catch (err) {
       const message =
-        err.response?.data?.message || 'Login failed';
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        (err.request
+          ? 'Cannot reach the server. Please try again in a moment.'
+          : 'Login failed');
       setError(message);
       throw new Error(message);
     } finally {
@@ -55,7 +59,11 @@ export const AuthProvider = ({ children }) => {
       return response.data;
     } catch (err) {
       const message =
-        err.response?.data?.message || 'Registration failed';
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        (err.request
+          ? 'Cannot reach the server. Please try again in a moment.'
+          : 'Registration failed');
       setError(message);
       throw new Error(message);
     } finally {

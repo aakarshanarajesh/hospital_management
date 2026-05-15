@@ -82,7 +82,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="relative overflow-hidden px-6 py-8 sm:px-10 lg:px-14">
+        <section className="relative hidden overflow-hidden px-6 py-8 sm:px-10 lg:block lg:px-14">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(59,130,246,0.28),transparent_32%),radial-gradient(circle_at_80%_30%,rgba(20,184,166,0.2),transparent_28%),linear-gradient(135deg,#0f172a_0%,#111827_48%,#0b1120_100%)]" />
           <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] [background-size:42px_42px]" />
 
@@ -141,7 +141,7 @@ export default function LoginPage() {
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
                 Welcome
               </p>
-              <h2 className="mt-2 text-3xl font-bold text-slate-950">
+              <h2 className="mt-2 text-2xl font-bold text-slate-950 sm:text-3xl">
                 Access your workspace
               </h2>
             </div>
