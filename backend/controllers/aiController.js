@@ -60,9 +60,7 @@ exports.predictPatientRisk = async (req, res) => {
       prediction = response.data;
     } catch (mlError) {
       console.error('ML Service error:', mlError.message);
-      return res.status(503).json({
-        error: 'ML Service unavailable. Please ensure the ML service is running.',
-      });
+      prediction = predictRiskFallback(healthMetrics);
     }
 
     // If patientId provided, update patient with prediction
@@ -137,6 +135,55 @@ function normalizeRiskInput(body) {
       symptoms.includes('breathing_difficulty')
         ? 1
         : 0),
+  };
+}
+
+function predictRiskFallback(metrics) {
+  let score = 0;
+
+  const age = Number(metrics.age);
+  const heartRate = Number(metrics.heart_rate);
+  const systolicBp = Number(metrics.systolic_bp);
+  const diastolicBp = Number(metrics.diastolic_bp);
+  const spo2 = Number(metrics.spo2);
+  const symptomCount =
+    Number(Boolean(metrics.fever)) +
+    Number(Boolean(metrics.cough)) +
+    Number(Boolean(metrics.breathing_difficulty));
+
+  if (age >= 60) score += 1;
+  if (age >= 75) score += 1;
+  if (heartRate < 50 || heartRate > 110) score += 1;
+  if (heartRate < 40 || heartRate > 130) score += 1;
+  if (systolicBp >= 150 || diastolicBp >= 95) score += 1;
+  if (systolicBp >= 180 || diastolicBp >= 120) score += 1;
+  if (spo2 < 94) score += 1;
+  if (spo2 < 90) score += 2;
+  if (metrics.fever) score += 1;
+  if (metrics.cough) score += 1;
+  if (metrics.breathing_difficulty) score += 2;
+  if (symptomCount >= 2) score += 1;
+
+  let riskLevel = 0;
+  if (score >= 6) riskLevel = 2;
+  else if (score >= 3) riskLevel = 1;
+
+  const labels = ['Low', 'Medium', 'High'];
+  const probability = Math.min(0.95, 0.55 + score * 0.06);
+  const probabilities = {
+    low: riskLevel === 0 ? probability : Math.max(0.03, 0.35 - score * 0.03),
+    medium: riskLevel === 1 ? probability : riskLevel === 0 ? 0.25 : 0.25,
+    high: riskLevel === 2 ? probability : Math.max(0.02, score * 0.04),
+  };
+
+  return {
+    risk_level: riskLevel,
+    risk_label: labels[riskLevel],
+    probability,
+    confidence: probability,
+    risk: labels[riskLevel],
+    probabilities,
+    source: 'backend_fallback',
   };
 }
 
