@@ -1,0 +1,32 @@
+[
+  {
+    "age": 19,
+    "heart_rate": 77,
+    "systolic_bp": 118,
+    "diastolic_bp": 73,
+    "spo2": 93,
+    "fever": 1,
+    "cough": 0,
+    "breathing_difficulty": 0
+  },
+  {
+    "age": 69,
+    "heart_rate": 75,
+    "systolic_bp": 83,
+    "diastolic_bp": 79,
+    "spo2": 100,
+    "fever": 1,
+    "cough": 1,
+    "breathing_difficulty": 0
+  },
+  {
+    "age": 32,
+    "heart_rate": 78,
+    "systolic_bp": 183,
+    "diastolic_bp": 91,
+    "spo2": 93,
+    "fever": 1,
+    "cough": 0,
+    "breathing_difficulty": 1
+  }
+]

@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Environment and local config
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+.venv/
+
+# Python packaging
+*.egg-info/
+.eggs/
+wheels/
+sdist/
+
+# Generated ML artifacts
+*.pkl
+*.joblib
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
