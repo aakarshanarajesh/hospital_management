@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import Card from '../components/Card';
@@ -6,8 +6,10 @@ import Alert from '../components/Alert';
 import Loader from '../components/Loader';
 import { CalendarDays, Clock, Plus, Stethoscope } from 'lucide-react';
 import { authAPI, scheduleAPI } from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 
 export default function SchedulePage() {
+  const { user } = useContext(AuthContext);
   const [schedules, setSchedules] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,23 +24,36 @@ export default function SchedulePage() {
   });
 
   useEffect(() => {
-    fetchPageData();
-  }, []);
+    if (user) fetchPageData();
+  }, [user]);
 
   const fetchPageData = async () => {
     try {
       setLoading(true);
       setError('');
-      const [schedulesRes, doctorsRes] = await Promise.all([
-        scheduleAPI.getAll({}),
-        authAPI.getUsers('doctor'),
-      ]);
+
+      if (user.role === 'admin') {
+        const [schedulesRes, doctorsRes] = await Promise.all([
+          scheduleAPI.getAll({}),
+          authAPI.getUsers('doctor'),
+        ]);
+        setSchedules(schedulesRes.data);
+        setDoctors(doctorsRes.data);
+        return;
+      }
+
+      if (user.role === 'doctor') {
+        const schedulesRes = await scheduleAPI.getByDoctor(user.id);
+        setSchedules(schedulesRes.data);
+        return;
+      }
+
+      const schedulesRes = await scheduleAPI.getAll({});
       setSchedules(schedulesRes.data);
-      setDoctors(doctorsRes.data);
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          'Failed to load schedules. Login as admin to manage doctors.'
+          'Failed to load schedules.'
       );
     } finally {
       setLoading(false);
@@ -66,6 +81,8 @@ export default function SchedulePage() {
 
   if (loading) return <Loader />;
 
+  const isAdmin = user?.role === 'admin';
+
   const getShiftColor = (shift) => {
     switch (shift) {
       case 'morning':
@@ -90,13 +107,15 @@ export default function SchedulePage() {
               <h1 className="text-3xl font-bold text-gray-800">
                 Doctor Schedules
               </h1>
-              <button
-                onClick={() => setShowForm(!showForm)}
-                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-              >
-                <Plus size={20} />
-                <span>Add Schedule</span>
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setShowForm(!showForm)}
+                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                >
+                  <Plus size={20} />
+                  <span>Add Schedule</span>
+                </button>
+              )}
             </div>
 
             {error && (
@@ -107,7 +126,7 @@ export default function SchedulePage() {
               />
             )}
 
-            {showForm && (
+            {isAdmin && showForm && (
               <Card className="mb-8" title="Add New Schedule">
                 <form onSubmit={handleAddSchedule} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
