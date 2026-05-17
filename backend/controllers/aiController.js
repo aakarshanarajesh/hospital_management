@@ -10,7 +10,7 @@ const Bed = require('../models/Bed');
 const Resource = require('../models/Resource');
 const axios = require('axios');
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:10000';
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
 
 /**
  * Predict patient risk
