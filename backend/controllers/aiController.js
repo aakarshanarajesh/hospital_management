@@ -317,9 +317,8 @@ exports.askHospitalAssistant = async (req, res) => {
       response = mlResponse.data;
     } catch (mlError) {
       console.error('ML Service error:', mlError.message);
-      return res.status(503).json({
-        error: 'Assistant service unavailable. Please ensure the ML service is running.',
-      });
+      // Fallback: generate mock response based on question
+      response = await generateAssistantFallback(question);
     }
 
     res.status(200).json(response);
@@ -328,6 +327,44 @@ exports.askHospitalAssistant = async (req, res) => {
     res.status(500).json({ error: 'Assistant query failed' });
   }
 };
+
+/**
+ * Generate fallback assistant response from database data
+ */
+async function generateAssistantFallback(question) {
+  const lowerQuestion = question.toLowerCase();
+  
+  // Get hospital stats
+  const stats = await getStatsFromDatabase();
+  
+  // Generate response based on question keywords
+  let answer = '';
+  
+  if (lowerQuestion.includes('icu') && lowerQuestion.includes('bed')) {
+    answer = `There are currently ${stats.icu_beds_available} ICU beds available.`;
+  } else if (lowerQuestion.includes('oxygen') || lowerQuestion.includes('cylinder')) {
+    answer = `We have ${stats.oxygen_cylinders_available} oxygen cylinders available.`;
+  } else if (lowerQuestion.includes('ventilator')) {
+    answer = `We have ${stats.ventilators_available} ventilators available.`;
+  } else if (lowerQuestion.includes('patient') && lowerQuestion.includes('total')) {
+    answer = `There are currently ${stats.total_patients} admitted patients.`;
+  } else if (lowerQuestion.includes('risk') || lowerQuestion.includes('critical')) {
+    answer = `There are currently ${stats.high_risk_patients} high-risk patients.`;
+  } else if (lowerQuestion.includes('bed') && lowerQuestion.includes('available')) {
+    const totalAvailable = stats.icu_beds_available + stats.general_beds_available + stats.private_beds_available;
+    answer = `We have ${totalAvailable} beds available (ICU: ${stats.icu_beds_available}, General: ${stats.general_beds_available}, Private: ${stats.private_beds_available}).`;
+  } else if (lowerQuestion.includes('occupancy') || lowerQuestion.includes('occupied')) {
+    answer = `Currently ${stats.beds_occupied} beds are occupied.`;
+  } else {
+    answer = `Based on current hospital data: ${stats.total_patients} admitted patients, ${stats.icu_beds_available} ICU beds available, ${stats.oxygen_cylinders_available} oxygen cylinders, and ${stats.ventilators_available} ventilators available.`;
+  }
+  
+  return {
+    answer: answer,
+    source: 'backend_fallback',
+    stats: stats,
+  };
+}
 
 /**
  * Get hospital statistics for assistant context
